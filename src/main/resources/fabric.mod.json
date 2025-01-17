@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "ice-highway-builder",
+  "version": "1.0.0",
+  "name": "Ice Highway Builder",
+  "description": "An AFKable ice highway builder addon made by K-K-L-L (Discord:theorangedot).",
+  "authors": [
+    "K-K-L-L (Discord:theorangedot)"
+  ],
+  "contact": {
+    "repo": "https://github.com/K-K-L-L/Ice-Highway-Builder"
+  },
+  "icon": "assets/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "meteor": [
+      "K_K_L_L.IceRail.addon.IceRail"
+    ]
+  },
+  "custom": {
+    "meteor-client:color": "225,25,25"
+  },
+  "depends": {
+    "java": ">=21",
+    "minecraft": ["${mc_version}"],
+    "meteor-client": "*"
+  }
+}
