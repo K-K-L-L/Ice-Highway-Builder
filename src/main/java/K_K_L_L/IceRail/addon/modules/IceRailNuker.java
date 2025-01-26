@@ -157,8 +157,8 @@ public class IceRailNuker extends Module {
         return switch (getPlayerDirection()) {
             case NORTH -> new BlockPos(playerX + 1, playerY, mc.player.getBlockZ() + 2);
             case SOUTH -> new BlockPos(playerX - 1, playerY, mc.player.getBlockZ() - 2);
-            case EAST -> new BlockPos(mc.player.getBlockX() + 2, playerY, playerZ + 1);
-            case WEST -> new BlockPos(mc.player.getBlockX() - 2, playerY, playerZ - 1);
+            case EAST -> new BlockPos(mc.player.getBlockX() + 2, playerY, playerZ - 1);
+            case WEST -> new BlockPos(mc.player.getBlockX() - 2, playerY, playerZ + 1);
             default -> new BlockPos(0, 64, 0); // This shouldn't happen
         };
     }

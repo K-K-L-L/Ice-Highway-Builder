@@ -29,24 +29,28 @@ public class IcePlacer extends Module {
             return;
         }
 
-        boolean shouldPlace = false;
-        BlockPos targetPos;
+        boolean shouldPlace;
+        BlockPos targetPos, targetPos2;
 
         switch (direction) {
             case NORTH -> {
                 targetPos = new BlockPos(playerX + 1, playerY + 1, mc.player.getBlockZ() - 2);
+                targetPos2 = new BlockPos(playerX + 2, playerY + 1, mc.player.getBlockZ() - 2);
                 shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 1;
             }
             case SOUTH -> {
                 targetPos = new BlockPos(playerX - 1, playerY + 1, mc.player.getBlockZ() + 2);
-                shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 0;
+                targetPos2 = new BlockPos(playerX - 2, playerY + 1, mc.player.getBlockZ() + 2);
+                shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 1;
             }
             case WEST -> {
-                targetPos = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ - 1);
-                shouldPlace = Math.abs(mc.player.getBlockX()) % 2 == 0;
+                targetPos = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ + 1);
+                targetPos2 = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ + 2);
+                shouldPlace = Math.abs(mc.player.getBlockX()) % 2 == 1;
             }
             case EAST -> {
-                targetPos = new BlockPos(mc.player.getBlockX() + 2, playerY + 1, playerZ + 1);
+                targetPos = new BlockPos(mc.player.getBlockX() + 2, playerY + 1, playerZ - 1);
+                targetPos2 = new BlockPos(mc.player.getBlockX() + 2 , playerY + 1, playerZ - 2);
                 shouldPlace = Math.abs(mc.player.getBlockX()) % 2 == 1;
             }
             default -> {
@@ -55,6 +59,13 @@ public class IcePlacer extends Module {
         }
 
         if (shouldPlace) {
+            if (mc.world.isAir(targetPos2)) {
+                switchToItem(Items.NETHERRACK);
+                BlockUtils.place(targetPos2, InvUtils.findInHotbar(itemStack ->
+                        itemStack.getItem() == Items.NETHERRACK), false, 0, true, true);
+                return;
+            }
+
             switchToItem(Items.BLUE_ICE);
             BlockUtils.place(targetPos, InvUtils.findInHotbar(itemStack ->
                     itemStack.getItem() == Items.BLUE_ICE), false, 0, true, true);

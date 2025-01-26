@@ -22,8 +22,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.*;
 
-import net.minecraft.item.ItemStack;
-
 import java.util.Objects;
 
 public class IceRailAutoReplenish extends Module {
@@ -187,9 +185,9 @@ public class IceRailAutoReplenish extends Module {
 
         if (!(currentStack.getItem() instanceof BlockItem &&
                 ((BlockItem) currentStack.getItem()).getBlock() instanceof ShulkerBoxBlock) ||
-                !hasPicksInShulker(currentStack)) {
+                !hasBlueiceInShulker(currentStack)) {
 
-            ItemStack shulkerWithPicks = findBestPicksShulker();
+            ItemStack shulkerWithPicks = findBestBlueIceShulker();
 
             if (shulkerWithPicks != null) {
                 int sourceSlot = findItemStackSlot(shulkerWithPicks);
@@ -200,28 +198,26 @@ public class IceRailAutoReplenish extends Module {
         }
     }
 
-    private static boolean hasPicksInShulker(ItemStack shulkerBox) {
+    private static boolean hasBlueiceInShulker(ItemStack shulkerBox) {
         ItemStack[] containerItems = new ItemStack[27];
         Utils.getItemsInContainerItem(shulkerBox, containerItems);
 
         for (ItemStack stack : containerItems) {
-            if (!stack.isEmpty() && (stack.getItem() == Items.DIAMOND_PICKAXE || stack.getItem() == Items.NETHERITE_PICKAXE)) {
-                if (stack.getDamage() < stack.getMaxDamage() - 50) {
-                    return true;
-                }
+            if (!stack.isEmpty() && (stack.getItem() == Items.BLUE_ICE)) {
+                return true;
             }
         }
         return false;
     }
 
-    public static ItemStack findBestPicksShulker() {
+    public static ItemStack findBestBlueIceShulker() {
         for (int i = 0; i < Objects.requireNonNull(mc.player).getInventory().size(); i++) {
             ItemStack stack = mc.player.getInventory().getStack(i);
 
             if (stack.getItem() instanceof BlockItem &&
                     ((BlockItem) stack.getItem()).getBlock() instanceof ShulkerBoxBlock) {
 
-                if (hasPicksInShulker(stack)) {
+                if (hasBlueiceInShulker(stack)) {
                     return stack;
                 }
             }
