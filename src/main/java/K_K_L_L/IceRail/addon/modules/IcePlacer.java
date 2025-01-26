@@ -39,13 +39,13 @@ public class IcePlacer extends Module {
                 shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 1;
             }
             case SOUTH -> {
-                targetPos = new BlockPos(playerX - 1, playerY + 1, mc.player.getBlockZ() + 2);
-                targetPos2 = new BlockPos(playerX - 2, playerY + 1, mc.player.getBlockZ() + 2);
+                targetPos = new BlockPos(playerX + 1, playerY + 1, mc.player.getBlockZ() + 2);
+                targetPos2 = new BlockPos(playerX + 2, playerY + 1, mc.player.getBlockZ() + 2);
                 shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 1;
             }
             case WEST -> {
-                targetPos = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ + 1);
-                targetPos2 = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ + 2);
+                targetPos = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ - 1);
+                targetPos2 = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ - 2);
                 shouldPlace = Math.abs(mc.player.getBlockX()) % 2 == 1;
             }
             case EAST -> {

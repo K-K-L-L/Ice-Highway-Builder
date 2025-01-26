@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import static meteordevelopment.meteorclient.utils.world.BlockUtils.getPlaceSide;
 
 import static K_K_L_L.IceRail.addon.modules.IceRailAutoReplenish.findBestBlueIceShulker;
+import static K_K_L_L.IceRail.addon.modules.IceRailAutoReplenish.findBestPicksShulker;
 
 public class IceHighwayBuilder extends Module {
     private int slotNumber;
@@ -48,6 +49,7 @@ public class IceHighwayBuilder extends Module {
     private float playerYaw;
     private float playerPitch;
     public static boolean isRestocking;
+    public static Integer restockingType;
     public static boolean isWallDone;
     public static boolean isPause;
     public static BlockPos restockingStartPosition;
@@ -197,6 +199,7 @@ public class IceHighwayBuilder extends Module {
 
         // Shulker Interactions
         isRestocking = false;
+        restockingType = 0; // 0=Blue ice 1=Pickaxes
         isWallDone = false;
         isPause = false;
         restockingStartPosition = null;
@@ -253,7 +256,11 @@ public class IceHighwayBuilder extends Module {
 
         if (hasLookedAtShulker < 10) { // To add a 10 tick delay
             if (hasLookedAtShulker == 0) {
-                InvUtils.swap(8, false);
+                if (restockingType == 0) {
+                    InvUtils.swap(8, false);
+                } else {
+                    InvUtils.swap(7, false);
+                }
                 lookAtBlock(shulkerBlockPos.withY(playerY - 1)); // To minimize the chance of the shulker being placed upside down
             }
 
@@ -263,7 +270,11 @@ public class IceHighwayBuilder extends Module {
 
         if (!(mc.world.getBlockState(shulkerBlockPos).getBlock() instanceof ShulkerBoxBlock)) {
             if (BlockUtils.canPlace(shulkerBlockPos, false) && !BlockUtils.canPlace(shulkerBlockPos, true)) return;
-            place(shulkerBlockPos, Hand.MAIN_HAND, 8, true, true, true);
+            if (restockingType == 0) {
+                place(shulkerBlockPos, Hand.MAIN_HAND, 8, true, true, true);
+            } else {
+                place(shulkerBlockPos, Hand.MAIN_HAND, 7, true, true, true);
+            }
             return;
         }
 
@@ -438,6 +449,35 @@ public class IceHighwayBuilder extends Module {
                 }
             }
 
+            restockingType = 0;
+            isPlacingShulker = true;
+            numberOfSlotsToSteal = countEmptySlots() / 2;
+            // Initiate restocking
+            isRestocking = true;
+            return;
+        }
+
+        if (countUsablePickaxes() == 0) {
+            ItemStack PicksShulker = findBestPicksShulker();
+
+            if (PicksShulker == null && !isPlacingShulker) {
+                error("Insufficient materials. Need: 1 diamond/netherite, >50 durability pickaxe.");
+                toggle();
+                return;
+            }
+
+            if (isGatheringItems()
+                    || isRestocking) return;
+
+            restockingStartPosition = mc.player.getBlockPos();
+            if (icePlacer.isActive()) {
+                if (getIsEating()) { // Toggle off
+                    icePlacer.toggle();
+                    iceRailNuker.toggle();
+                }
+            }
+
+            restockingType = 1;
             isPlacingShulker = true;
             numberOfSlotsToSteal = countEmptySlots() / 2;
             // Initiate restocking
@@ -485,11 +525,12 @@ public class IceHighwayBuilder extends Module {
         if (!walkForward) {
             setKeyPressed(mc.options.forwardKey, false);
             setKeyPressed(mc.options.rightKey, false);
+            setKeyPressed(mc.options.leftKey, false);
             return;
         }
 
         setKeyPressed(mc.options.forwardKey, true); // W
-        if (getPlayerDirection() == Direction.EAST || getPlayerDirection() == Direction.WEST)
+        if (getPlayerDirection() == Direction.EAST || getPlayerDirection() == Direction.SOUTH)
             setKeyPressed(mc.options.rightKey, true);    // D
         else
             setKeyPressed(mc.options.leftKey, true);    // A
