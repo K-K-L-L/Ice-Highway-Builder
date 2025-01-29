@@ -17,7 +17,9 @@ import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.PlayerUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
+import meteordevelopment.meteorclient.utils.player.SlotUtils;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.client.MinecraftClient;
@@ -32,11 +34,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.NotNull;
+import java.util.*;
 
 import static meteordevelopment.meteorclient.utils.world.BlockUtils.getPlaceSide;
 
 import static K_K_L_L.IceRail.addon.modules.IceRailAutoReplenish.findBestBlueIceShulker;
 import static K_K_L_L.IceRail.addon.modules.IceRailAutoReplenish.findBestPicksShulker;
+import static K_K_L_L.IceRail.addon.modules.IceRailAutoReplenish.findPickToSwap;
 
 public class IceHighwayBuilder extends Module {
     private int slotNumber;
@@ -61,10 +65,14 @@ public class IceHighwayBuilder extends Module {
     public static BlockPos shulkerBlockPos;
     public static boolean isBreakingShulker;
     public static boolean isPostRestocking;
+    public static boolean isClearingInventory;
     public static boolean isProcessingTasks;
     public static int hasLookedAtShulker = 0;
     public static boolean hasQueued;
     public static Integer numberOfSlotsToSteal;
+    public static int swapSlot;
+    public static int trashCount;
+    public static float oldYaw;
 
     public IceHighwayBuilder() {
         super(IceRail.CATEGORY, "ice-highway-builder", "Automated ice highway builder.");
@@ -81,6 +89,7 @@ public class IceHighwayBuilder extends Module {
 
     private final SettingGroup sgAutoEat = settings.createGroup("Auto Eat");
     private final SettingGroup sgInventory = settings.createGroup("Inventory");
+    private final SettingGroup sgBlacklist = settings.createGroup("Inventory clearer");
 
     // Auto Eat Settings
     private final Setting<Boolean> enableAutoEat = sgAutoEat.add(new BoolSetting.Builder()
@@ -121,6 +130,12 @@ public class IceHighwayBuilder extends Module {
             .build()
     );
 
+    private final Setting<List<Item>> blacklist = sgBlacklist.add(new ItemListSetting.Builder()
+         .name("blacklist")
+         .description("Items you don't want to throw (Example: Shulkers).")
+         .build()
+     );
+
     public Direction getPlayerCurrentDirection() {
         assert mc.player != null;
         return mc.player.getHorizontalFacing();
@@ -156,19 +171,13 @@ public class IceHighwayBuilder extends Module {
 
         assert mc.player != null;
         playerDirection = getPlayerCurrentDirection();
-        playerYaw = mc.player.getYaw();
-        playerPitch = mc.player.getPitch();
+        playerPitch = 0;
     }
 
     private boolean validateInitialConditions() {
         if (mc.player == null || mc.world == null) return false;
 
         boolean flag = true;
-
-        if (countUsablePickaxes() == 0) {
-            error("Insufficient materials. Need: 1 diamond/netherite, >50 durability pickaxe.");
-            flag = false;
-        }
 
         return flag;
     }
@@ -177,13 +186,29 @@ public class IceHighwayBuilder extends Module {
     public void onDeactivate() {
         if (mc.player == null || mc.world == null) return;
 
+        Direction direction = mc.player.getHorizontalFacing();
+        if (direction == null) return;
+        switch (direction) {
+            case Direction.NORTH:
+                mc.player.setYaw(180);
+                break;
+            case Direction.SOUTH:
+                mc.player.setYaw(0);
+                break;
+            case Direction.EAST:
+                mc.player.setYaw(-90);
+                break;
+            case Direction.WEST:
+                mc.player.setYaw(90);
+                break;
+        }
+        mc.player.setPitch(0);
         cancelCurrentProcessBaritone();
         disableAllModules();
         releaseForward();
         resetState();
         shutdownScheduler1();
-        mc.player.setYaw(playerYaw);
-        mc.player.setPitch(playerPitch);
+
     }
 
     private void resetState() {
@@ -215,6 +240,9 @@ public class IceHighwayBuilder extends Module {
         hasLookedAtShulker = 0;
         hasQueued = false;
         stealingDelay = 0;
+        swapSlot = -1;
+        isClearingInventory = false;
+        oldYaw = 0;
     }
 
     private void steal(ScreenHandler handler, int slot_number) {
@@ -291,7 +319,9 @@ public class IceHighwayBuilder extends Module {
         }
 
         mc.setScreen(null);
-
+        if (stacksStolen == null) {
+            stacksStolen = 0;
+        }
         if ((stacksStolen >= numberOfSlotsToSteal)
                 || stacksStolen >= 27 // No more slots left (numberOfSlotsToSteal > stacksStolen because the shulker may not have the full amount)
             // Worst case scenario is 6.75 seconds or 135 ticks
@@ -301,6 +331,7 @@ public class IceHighwayBuilder extends Module {
 
             stacksStolen = 0;
             slotNumber = 0;
+            
             wasRestocking = true;
 
             isPause = false;
@@ -317,8 +348,12 @@ public class IceHighwayBuilder extends Module {
                     stealingDelay++;
                     return;
                 }
-
-                steal(handler, slotNumber);
+                if (restockingType==1) {
+                    InvUtils.quickSwap().fromId(0).toId(slotNumber);
+                    stacksStolen ++;
+                } else {
+                    steal(handler, slotNumber);
+                }
                 slotNumber++;
                 stealingDelay = 0;
             }
@@ -334,6 +369,62 @@ public class IceHighwayBuilder extends Module {
             case WEST -> new BlockPos(mc.player.getBlockX() - offset, playerY, playerZ);
             default -> new BlockPos(0, 0, 0); // This shouldn't happen.
         };
+    }
+
+    private void handleClearInventory() {
+        if (isRestocking || isPostRestocking)
+            return;
+        assert mc.player != null;
+
+        if (stealingDelay < 3) {
+            stealingDelay ++;
+            return;
+        }
+        trashCount = 0;
+        for (int i = 0; i < 36; i++) {
+            ItemStack itemStack = mc.player.getInventory().getStack(i);
+            if (!itemStack.isEmpty() && !blacklist.get().contains(itemStack.getItem())) {
+                trashCount ++;
+            }
+        }
+        if (stealingDelay > 6) {stealingDelay = 0;} else {stealingDelay++;}
+        if (trashCount > 1) {
+            mc.player.setPitch(-30);
+            mc.player.setYaw(oldYaw - 180);
+            for (int i = 2; i < 36; i++) {
+                ItemStack itemStack = mc.player.getInventory().getStack(i);
+                if (!itemStack.isEmpty() && !blacklist.get().contains(itemStack.getItem()) && (trashCount > 1)) {
+                    if (mc.player.getInventory().getStack(6).isEmpty()) {
+                        InvUtils.quickSwap().fromId(6).toId(i);
+                        if (i < 9) {
+                            InvUtils.swap(i, false);
+                        } else {
+                            InvUtils.swap(6, false);
+                        }
+                    }
+                    if (stealingDelay == 5) {
+                        if (i < 9) {
+                            InvUtils.drop().slot(i);
+                        } else {
+                            InvUtils.drop().slot(6);
+                        }
+                    }
+                    return;
+                }
+            }
+        } else {
+            mc.player.setYaw(oldYaw);
+            isPlacingShulker = true;
+            if (restockingType == 0) {
+                swapSlot = -1;
+                numberOfSlotsToSteal = countEmptySlots();
+            } else {
+                swapSlot = findPickToSwap(mc.player.getInventory().getStack(7));
+                numberOfSlotsToSteal = 1;
+            }
+            isRestocking = true;
+            isClearingInventory = false;
+        }
     }
 
     private void handlePostRestocking() {
@@ -413,14 +504,13 @@ public class IceHighwayBuilder extends Module {
             return;
         }
 
-        if (countUsablePickaxes() == 0) {
-            error("0 Usable pickaxes were found. Ice Highway Builder will turn off.");
-            toggle();
+        if (isPostRestocking) {
+            handlePostRestocking();
             return;
         }
 
-        if (isPostRestocking) {
-            handlePostRestocking();
+        if (isClearingInventory) {
+            handleClearInventory();
             return;
         }
 
@@ -450,10 +540,11 @@ public class IceHighwayBuilder extends Module {
             }
 
             restockingType = 0;
-            isPlacingShulker = true;
-            numberOfSlotsToSteal = countEmptySlots() / 2;
-            // Initiate restocking
-            isRestocking = true;
+            slotNumber = 0;
+            stealingDelay = 0;
+            // Initiate inventory clear
+            oldYaw = mc.player.getYaw();
+            isClearingInventory = true;
             return;
         }
 
@@ -479,9 +570,13 @@ public class IceHighwayBuilder extends Module {
 
             restockingType = 1;
             isPlacingShulker = true;
-            numberOfSlotsToSteal = countEmptySlots() / 2;
-            // Initiate restocking
-            isRestocking = true;
+            numberOfSlotsToSteal = 1;
+            swapSlot = findPickToSwap(mc.player.getInventory().getStack(7));
+            slotNumber = swapSlot;
+            // Initiate inventory clear
+            stealingDelay = 0;
+            oldYaw = mc.player.getYaw();
+            isClearingInventory = true;
             return;
         }
 
@@ -650,7 +745,7 @@ public class IceHighwayBuilder extends Module {
                 mc.player.setYaw(-135);
                 break;
             case Direction.SOUTH, Direction.WEST:
-                mc.player.setYaw(45);
+                mc.player.setYaw(135);
                 break;
         }
     }

@@ -45,13 +45,6 @@
              .build()
      );
  
-     private final Setting<Item> slot2Item = sgGeneral.add(new ItemSetting.Builder()
-             .name("slot-2-item")
-             .description("Item to maintain in the second hotbar slot.")
-             .defaultValue(Items.AIR)
-             .build()
-     );
- 
      private final Setting<Item> slot3Item = sgGeneral.add(new ItemSetting.Builder()
              .name("slot-3-item")
              .description("Item to maintain in the third hotbar slot.")
@@ -92,7 +85,7 @@
  
      public IceRailAutoReplenish() {
          super(IceRail.CATEGORY, "ice-rail-auto-replenish",
-                 "Automatically refills specific items in each hotbar slot. Slot 1 = Pickaxe, Slot 8 = Pickaxe shulker, Slot 9 = Blue Ice Shulker");
+                 "Automatically refills specific items in each hotbar slot. %nSlot 1 = Pickaxe, Slot 2 = Netherrack, Slot 8 = Pickaxe shulker, Slot 9 = Blue Ice Shulker");
  
          for (int i = 0; i < items.length; i++) items[i] = new ItemStack(Items.AIR);
      }
@@ -117,15 +110,18 @@
              checkPicksShulkerSlot();
  
              Item[] itemsToCheck = new Item[]{
-                     slot2Item.get(), slot3Item.get(),
+                     slot3Item.get(),
                      slot4Item.get(), slot5Item.get(),
                      slot6Item.get(), slot7Item.get()
              };
- 
-             for (int i = 1; i <= 7; i++) {
+             
+             for (int i = 1; i <= 5; i++) {
                  if (!itemsToCheck[i - 1].equals(Items.AIR) && !flag) flag = true;
- 
-                 checkSlotWithDesignatedItem(i, itemsToCheck[i - 1]);
+                 if (i == 1) {
+                    checkSlotWithDesignatedItem(1, Items.NETHERRACK);
+                 } else {
+                    checkSlotWithDesignatedItem(i, itemsToCheck[i - 1]);
+                 }
              }
          }
          else {
@@ -236,6 +232,22 @@
          }
          return false;
      }
+
+     public static int findPickToSwap(ItemStack shulkerBox) {
+        ItemStack[] containerItems = new ItemStack[27];
+        Utils.getItemsInContainerItem(shulkerBox, containerItems);
+        int i;
+        i = 0;
+        for (ItemStack stack : containerItems) {
+            if (!stack.isEmpty() && (stack.getItem() == Items.DIAMOND_PICKAXE || stack.getItem() == Items.NETHERITE_PICKAXE)) {
+                if (stack.getDamage() < stack.getMaxDamage() - 50) {
+                    return i;
+                }
+            }
+            i++;
+        }
+        return -1;
+    }
  
      public static ItemStack findBestBlueIceShulker() {
          for (int i = 0; i < Objects.requireNonNull(mc.player).getInventory().size(); i++) {
