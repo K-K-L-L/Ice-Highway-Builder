@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "ice-highway-builder",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "Ice Highway Builder",
   "description": "An AFKable ice highway builder addon made by K-K-L-L (Discord:theorangedot).",
   "authors": [
