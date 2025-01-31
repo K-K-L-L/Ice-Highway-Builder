@@ -38,28 +38,28 @@ public class IcePlacer extends Module {
                 targetPos2 = new BlockPos(playerX + 2, playerY + 1, mc.player.getBlockZ() - 2);
                 guardrail1 = new BlockPos(playerX + 2, playerY + 2, mc.player.getBlockZ() - 2);
                 guardrail2 = new BlockPos(playerX - 1, playerY + 2, mc.player.getBlockZ() - 2);
-                shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 1;
+                shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 0;
             }
             case SOUTH -> {
                 targetPos = new BlockPos(playerX + 1, playerY + 1, mc.player.getBlockZ() + 2);
                 targetPos2 = new BlockPos(playerX + 2, playerY + 1, mc.player.getBlockZ() + 2);
-                guardrail1 = new BlockPos(playerX + 2, playerY + 2, mc.player.getBlockZ() - 2);
-                guardrail2 = new BlockPos(playerX - 1, playerY + 2, mc.player.getBlockZ() - 2);
-                shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 1;
+                guardrail1 = new BlockPos(playerX + 2, playerY + 2, mc.player.getBlockZ() + 2);
+                guardrail2 = new BlockPos(playerX - 1, playerY + 2, mc.player.getBlockZ() + 2);
+                shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 0;
             }
             case WEST -> {
                 targetPos = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ - 1);
                 targetPos2 = new BlockPos(mc.player.getBlockX() - 2 , playerY + 1, playerZ - 2);
                 guardrail1 = new BlockPos(mc.player.getBlockX() - 2 , playerY + 2, playerZ - 2);
                 guardrail2 = new BlockPos(mc.player.getBlockX() - 2 , playerY + 2, playerZ + 1);
-                shouldPlace = Math.abs(mc.player.getBlockX()) % 2 == 1;
+                shouldPlace = Math.abs(mc.player.getBlockX()) % 2 == 0;
             }
             case EAST -> {
                 targetPos = new BlockPos(mc.player.getBlockX() + 2, playerY + 1, playerZ - 1);
                 targetPos2 = new BlockPos(mc.player.getBlockX() + 2 , playerY + 1, playerZ - 2);
-                guardrail1 = new BlockPos(mc.player.getBlockX() - 2 , playerY + 2, playerZ - 2);
-                guardrail2 = new BlockPos(mc.player.getBlockX() - 2 , playerY + 2, playerZ + 1);
-                shouldPlace = Math.abs(mc.player.getBlockX()) % 2 == 1;
+                guardrail1 = new BlockPos(mc.player.getBlockX() + 2 , playerY + 2, playerZ - 2);
+                guardrail2 = new BlockPos(mc.player.getBlockX() + 2 , playerY + 2, playerZ + 1);
+                shouldPlace = Math.abs(mc.player.getBlockX()) % 2 == 0;
             }
             default -> {
                 return;

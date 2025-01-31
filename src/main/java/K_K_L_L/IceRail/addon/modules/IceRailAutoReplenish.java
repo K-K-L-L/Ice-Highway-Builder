@@ -73,19 +73,12 @@
              .build()
      );
  
-     private final Setting<Item> slot7Item = sgGeneral.add(new ItemSetting.Builder()
-             .name("slot-7-item")
-             .description("Item to maintain in the seventh hotbar slot.")
-             .defaultValue(Items.AIR)
-             .build()
-     );
- 
      private final ItemStack[] items = new ItemStack[10];
      private int tickDelayLeft;
  
      public IceRailAutoReplenish() {
          super(IceRail.CATEGORY, "ice-rail-auto-replenish",
-                 "Automatically refills specific items in each hotbar slot. %nSlot 1 = Pickaxe, Slot 2 = Netherrack, Slot 8 = Pickaxe shulker, Slot 9 = Blue Ice Shulker");
+                 "Automatically refills specific items in each hotbar slot. %nSlot 1 = Pickaxe, Slot 2 = Netherrack, Slot 7 = reserved, Slot 8 = Pickaxe shulker, Slot 9 = Blue Ice Shulker");
  
          for (int i = 0; i < items.length; i++) items[i] = new ItemStack(Items.AIR);
      }
@@ -112,15 +105,16 @@
              Item[] itemsToCheck = new Item[]{
                      slot3Item.get(),
                      slot4Item.get(), slot5Item.get(),
-                     slot6Item.get(), slot7Item.get()
+                     slot6Item.get()
              };
              
              for (int i = 1; i <= 5; i++) {
-                 if (!itemsToCheck[i - 1].equals(Items.AIR) && !flag) flag = true;
+                 int j = i-2; if (j<0) {j=0;}
+                 if (!itemsToCheck[j].equals(Items.AIR) && !flag) flag = true;
                  if (i == 1) {
                     checkSlotWithDesignatedItem(1, Items.NETHERRACK);
                  } else {
-                    checkSlotWithDesignatedItem(i, itemsToCheck[i - 1]);
+                    checkSlotWithDesignatedItem(i, itemsToCheck[i - 2]);
                  }
              }
          }

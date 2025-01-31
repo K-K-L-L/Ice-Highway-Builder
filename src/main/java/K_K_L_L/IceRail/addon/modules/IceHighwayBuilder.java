@@ -45,6 +45,7 @@ import static K_K_L_L.IceRail.addon.modules.IceRailAutoReplenish.findPickToSwap;
 public class IceHighwayBuilder extends Module {
     private int slotNumber;
     public static boolean isGoingToHighway;
+    public static boolean isGoingToHole;
     private int stealingDelay = 0;
     private static BlockPos highwayCoords;
     public static boolean wasEchestFarmerActive = false;
@@ -130,7 +131,7 @@ public class IceHighwayBuilder extends Module {
             .build()
     );
 
-    private final Setting<List<Item>> blacklist = sgBlacklist.add(new ItemListSetting.Builder()
+    public final Setting<List<Item>> blacklist = sgBlacklist.add(new ItemListSetting.Builder()
          .name("blacklist")
          .description("Items you don't want to throw (Example: Shulkers).")
          .build()
@@ -147,6 +148,10 @@ public class IceHighwayBuilder extends Module {
 
     public static void setHighwayCoords(BlockPos value) {
         highwayCoords = value;
+    }
+
+    public Setting<List<Item>> getBlacklist() {
+        return blacklist;
     }
 
     private void initializeRequiredVariables() {
@@ -219,6 +224,7 @@ public class IceHighwayBuilder extends Module {
         playerZ = null;
         highwayCoords = null;
         isGoingToHighway = false;
+        isGoingToHole = false;
         playerDirection = null;
         releaseForward();
 
@@ -290,7 +296,7 @@ public class IceHighwayBuilder extends Module {
                     InvUtils.swap(7, false);
                 }
                 lookAtBlock(shulkerBlockPos.withY(playerY - 1)); // To minimize the chance of the shulker being placed upside down
-            }
+            }   
 
             hasLookedAtShulker++;
             return;
@@ -361,7 +367,7 @@ public class IceHighwayBuilder extends Module {
     }
 
     private @NotNull BlockPos getBlockPos() {
-        int offset = 2;
+        int offset = 1;
         return switch (getPlayerDirection()) {
             case NORTH -> new BlockPos(playerX, playerY, mc.player.getBlockZ() + offset);
             case SOUTH -> new BlockPos(playerX, playerY, mc.player.getBlockZ() - offset);
@@ -375,8 +381,24 @@ public class IceHighwayBuilder extends Module {
         if (isRestocking || isPostRestocking)
             return;
         assert mc.player != null;
-
-        if (stealingDelay < 3) {
+        if (stealingDelay == 0) {
+            if (!mc.world.getBlockState(getBlockPos()).isAir() 
+            && !(mc.world.getBlockState(getBlockPos()).getBlock() instanceof ShulkerBoxBlock)
+            && !hasOpenedShulker) {
+                InvUtils.swap(0, true);
+                BlockUtils.breakBlock(getBlockPos(), true);
+            }
+        }
+        if (stealingDelay == 2) {
+            BlockPos temp = new BlockPos(getBlockPos().getX(),getBlockPos().getY()+1,getBlockPos().getZ());
+            if (!mc.world.getBlockState(temp).isAir()
+                    && !(mc.world.getBlockState(temp).getBlock() instanceof ShulkerBoxBlock)
+                    && !hasOpenedShulker) {
+                InvUtils.swap(0, true);
+                BlockUtils.breakBlock(temp, true);
+            }
+        }
+        if (stealingDelay < 4) {
             stealingDelay ++;
             return;
         }
@@ -454,7 +476,7 @@ public class IceHighwayBuilder extends Module {
             if (areShulkerBoxesNearby()) {
                 for (Item item : items) {
                     if (!isGatheringItems()) {
-                        gatherItem(item);
+                        IceRailGatherItem(item);
                         return;
                     }
                     return;
@@ -491,16 +513,22 @@ public class IceHighwayBuilder extends Module {
         }
 
         if (isGoingToHighway) {
-            handleInvalidPosition();
+            handleInvalidPosition(0);
             return;
         }
 
         if (mc.player.getBlockY() == playerY) {
-            setHWCoords();
+            setHWCoords(0);
         }
 
         if (!isPlayerInValidPosition()) {
             isGoingToHighway = true;
+            return;
+        }
+
+        if (isHolesInIce()) {
+            setHWCoords(1);
+            handleInvalidPosition(1);
             return;
         }
 
@@ -701,24 +729,87 @@ public class IceHighwayBuilder extends Module {
         switch (getPlayerDirection()) {
             case NORTH, SOUTH -> {
                 return mc.player.getBlockY() == playerY &&
-                        mc.player.getBlockX() == playerX;
+                        mc.player.getBlockX() == playerX &&
+                        mc.player.getX() <= playerX+0.3;
             }
             case EAST, WEST -> {
                 return mc.player.getBlockY() == playerY &&
-                        mc.player.getBlockZ() == playerZ;
+                        mc.player.getBlockZ() == playerZ &&
+                        mc.player.getZ() >= playerZ+0.3;
             }
         }
 
         return false;
     }
 
-    private void handleInvalidPosition() {
+    private boolean isHolesInIce() {
+        Direction direction = getPlayerDirection();
+        assert mc.player != null;
+        if (direction == null) {
+            return false;
+        }
+        int airBlocks = 0;
+        BlockPos block1 = null;
+        int startBlock = 0;
+        switch (direction) {
+            case NORTH -> {
+                if (Math.abs(mc.player.getBlockZ()) % 2 == 0) {
+                    startBlock = mc.player.getBlockZ();
+                } else {
+                    startBlock = mc.player.getBlockZ() + 1;
+                }
+            }
+            case SOUTH -> {
+                if (Math.abs(mc.player.getBlockZ()) % 2 == 0) {
+                    startBlock = mc.player.getBlockZ();
+                } else {
+                    startBlock = mc.player.getBlockZ() - 1;
+                }
+            }
+            case WEST -> {
+                if (Math.abs(mc.player.getBlockX()) % 2 == 0) {
+                    startBlock = mc.player.getBlockX();
+                } else {
+                    startBlock = mc.player.getBlockX() + 1;
+                }
+            }
+            case EAST -> {
+                if (Math.abs(mc.player.getBlockX()) % 2 == 0) {
+                    startBlock = mc.player.getBlockX();
+                } else {
+                    startBlock = mc.player.getBlockX() - 1;
+                }
+            }
+        }
+            for (int i = 1; i < 3; i++) {
+                switch (direction) {
+                    case WEST -> {
+                        block1 = new BlockPos(startBlock + i * 2, playerY+1, playerZ - 1);
+                    }
+                    case EAST -> {
+                        block1 = new BlockPos(startBlock - i * 2, playerY+1, playerZ - 1);
+                    }
+                    case NORTH -> {
+                        block1 = new BlockPos(playerX + 1, playerY+1, startBlock + i * 2);
+                    }
+                    case SOUTH -> {
+                        block1 = new BlockPos(playerX + 1, playerY+1, startBlock - i * 2);
+                    }
+                }
+                if (Blocks.BLUE_ICE != mc.world.getBlockState(block1).getBlock()) {
+                    airBlocks++;
+                }
+            }
+            return airBlocks > 0 && airBlocks < 3;
+        }
+
+    private void handleInvalidPosition(int Type) {
         assert mc.player != null;
         BlockPos target;
         target = getHighwayCoords();
 
         if (getHighwayCoords() == null) {
-            setHWCoords();
+            setHWCoords(Type);
             target = getHighwayCoords();
         }
 
@@ -766,7 +857,7 @@ public class IceHighwayBuilder extends Module {
 
     private void disableAllModules() {
         String[] modulesToDisable = {
-                "gather-item",
+                "ice-rail-gather-item",
                 "ice-placer",
                 "ice-rail-auto-replenish",
                 "ice-rail-nuker",
