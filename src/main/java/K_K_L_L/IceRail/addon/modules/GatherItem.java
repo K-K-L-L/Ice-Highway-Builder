@@ -8,7 +8,6 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
-import meteordevelopment.meteorclient.utils.player.InvUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.ItemEntity;
@@ -21,7 +20,6 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,15 +30,13 @@ import java.util.concurrent.TimeUnit;
 
 import static K_K_L_L.IceRail.addon.Utils.*;
 
-public class IceRailGatherItem extends Module {
+public class GatherItem extends Module {
     private int tickCounter = 0;
     private static ClientPlayerEntity player;
     private static ScheduledExecutorService scheduler1;
 
     public static final int SEARCH_RADIUS = 15;
     private static final int MAX_Y = 122;
-    IceHighwayBuilder object = new IceHighwayBuilder();
-    Setting<List<Item>> blacklist = object.getBlacklist();
 
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final Setting<Item> item = sgGeneral.add(new ItemSetting.Builder()
@@ -50,8 +46,8 @@ public class IceRailGatherItem extends Module {
             .build()
     );
 
-    public IceRailGatherItem() {
-        super(IceRail.CATEGORY, "ice-rail-gather-item", "A helper module that gathers nearby items.");
+    public GatherItem() {
+        super(IceRail.CATEGORY, "gather-item", "A helper module that gathers nearby items.");
     }
 
     private record ItemLocation(BlockPos pos, boolean isAccessible, double distanceToPlayer) {
@@ -136,6 +132,7 @@ public class IceRailGatherItem extends Module {
 
         Item targetItem = item.get();
         int totalItemSpace = 0;
+
         for (int i = 0; i < mc.player.getInventory().main.size(); i++) {
             if (mc.player.getInventory().main.get(i).isOf(Items.AIR)) {
                 totalItemSpace += 64;
@@ -143,28 +140,8 @@ public class IceRailGatherItem extends Module {
                 totalItemSpace += 64 - mc.player.getInventory().main.get(i).getCount();
             }
         }
-        if (totalItemSpace <= 0) {
-            for (int i = 2; i < 36; i++) {
-                ItemStack itemStack = mc.player.getInventory().getStack(i);
-                if (!itemStack.isEmpty() && itemStack.getItem() != targetItem && !blacklist.get().contains(itemStack.getItem())) {
-                    if (mc.player.getInventory().getStack(6).isEmpty()) {
-                        InvUtils.quickSwap().fromId(6).toId(i);
-                        if (i < 9) {
-                            InvUtils.swap(i, false);
-                        } else {
-                            InvUtils.swap(6, false);
-                        }
-                        if (i < 9) {
-                            InvUtils.drop().slot(i);
-                        } else {
-                            InvUtils.drop().slot(6);
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        return false;
+
+        return totalItemSpace <= 0;
     }
 
     private void moveToItemLocations(List<BlockPos> locations, int index) {

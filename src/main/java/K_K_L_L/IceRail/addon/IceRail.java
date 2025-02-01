@@ -23,7 +23,7 @@ public class IceRail extends MeteorAddon {
         Modules.get().add(new IceRailAutoEat());
         Modules.get().add(new ScaffoldGrim());
         Modules.get().add(new IcePlacer());
-        Modules.get().add(new IceRailGatherItem());
+        Modules.get().add(new GatherItem());
     }
 
     @Override

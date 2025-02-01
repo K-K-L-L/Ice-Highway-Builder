@@ -23,7 +23,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
 
-import static K_K_L_L.IceRail.addon.modules.IceRailGatherItem.SEARCH_RADIUS;
+import static K_K_L_L.IceRail.addon.modules.GatherItem.SEARCH_RADIUS;
 import static K_K_L_L.IceRail.addon.modules.IceHighwayBuilder.*;
 import static meteordevelopment.meteorclient.utils.world.BlockUtils.canPlaceBlock;
 import static net.minecraft.world.World.MAX_Y;
@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.Arrays;
 
 public class Utils {
     private static final MinecraftClient mc = MinecraftClient.getInstance();
@@ -160,19 +159,13 @@ public class Utils {
             builderProcess.resume();
     }
 
-    public static void setHWCoords(int Type) {
+    public static void setHWCoords() {
         assert mc.player != null;
-        int offset;
-        if (Type == 0) {
-            offset = 1;
-        } else {
-            offset = 7;
-        }
         switch (getPlayerDirection()) {
-            case NORTH -> setHighwayCoords(new BlockPos(playerX, playerY, mc.player.getBlockZ() - offset));
-            case SOUTH -> setHighwayCoords(new BlockPos(playerX, playerY, mc.player.getBlockZ() + offset));
-            case EAST -> setHighwayCoords(new BlockPos(mc.player.getBlockX() - offset, playerY, playerZ));
-            case WEST -> setHighwayCoords(new BlockPos(mc.player.getBlockX() + offset, playerY, playerZ));
+            case NORTH -> setHighwayCoords(new BlockPos(playerX, playerY, mc.player.getBlockZ() - 1));
+            case SOUTH -> setHighwayCoords(new BlockPos(playerX, playerY, mc.player.getBlockZ() + 1));
+            case EAST -> setHighwayCoords(new BlockPos(mc.player.getBlockX() - 1, playerY, playerZ));
+            case WEST -> setHighwayCoords(new BlockPos(mc.player.getBlockX() + 1, playerY, playerZ));
         }
     }
 
@@ -203,7 +196,7 @@ public class Utils {
     }
 
     public static boolean isGatheringItems() {
-        return Modules.get().get("ice-rail-gather-item").isActive();
+        return Modules.get().get("gather-item").isActive();
     }
 
     public static boolean checkItemsOnGround(List<BlockPos> locations) {
@@ -317,27 +310,7 @@ public class Utils {
 
         if (swapBack) InvUtils.swapBack();
     }
-    public static Block[] shulks = {
-        Blocks.SHULKER_BOX,
-        Blocks.WHITE_SHULKER_BOX,
-        Blocks.ORANGE_SHULKER_BOX,
-        Blocks.MAGENTA_SHULKER_BOX,
-        Blocks.LIGHT_BLUE_SHULKER_BOX,
-        Blocks.YELLOW_SHULKER_BOX,
-        Blocks.LIME_SHULKER_BOX,
-        Blocks.PINK_SHULKER_BOX,
-        Blocks.GRAY_SHULKER_BOX,
-        Blocks.LIGHT_GRAY_SHULKER_BOX,
-        Blocks.CYAN_SHULKER_BOX,
-        Blocks.PURPLE_SHULKER_BOX,
-        Blocks.BLUE_SHULKER_BOX,
-        Blocks.BROWN_SHULKER_BOX,
-        Blocks.GREEN_SHULKER_BOX,
-        Blocks.RED_SHULKER_BOX,
-        Blocks.BLACK_SHULKER_BOX
-    };
-    public static List<Block> shulkerBoxesBlock = Arrays.asList(shulks);
-    
+
     public static Item[] shulkerBoxes = {
             Items.SHULKER_BOX,
             Items.WHITE_SHULKER_BOX,
@@ -385,10 +358,10 @@ public class Utils {
         return getShulkerBoxesNearby().length > 0;
     }
 
-    public static void IceRailGatherItem(Item item) {
-        setModuleSetting("ice-rail-gather-item", "item", item);
-        Module IceRailGatherItem = Modules.get().get("ice-rail-gather-item");
-        if (!isGatheringItems()) IceRailGatherItem.toggle();
+    public static void gatherItem(Item item) {
+        setModuleSetting("gather-item", "item", item);
+        Module gatherItem = Modules.get().get("gather-item");
+        if (!isGatheringItems()) gatherItem.toggle();
     }
 
     public static void setModuleSetting(String moduleName, String settingName, Object value) {
