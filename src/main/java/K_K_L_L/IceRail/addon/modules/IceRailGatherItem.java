@@ -75,6 +75,9 @@ public class IceRailGatherItem extends Module {
             scheduler1.shutdownNow();
         }
         cancelCurrentProcessBaritone();
+        if (state == "waitingForGather") {
+            state = returnToState;
+        }
     }
 
     private static void reinitializeScheduler() {

@@ -131,7 +131,7 @@ public class IceHighwayBuilder extends Module {
             .build()
     );
 
-    public final Setting<List<Item>> blacklist = sgBlacklist.add(new ItemListSetting.Builder()
+    private final Setting<List<Item>> blacklist = sgBlacklist.add(new ItemListSetting.Builder()
          .name("blacklist")
          .description("Items you don't want to throw (Example: Shulkers).")
          .build()
@@ -148,10 +148,6 @@ public class IceHighwayBuilder extends Module {
 
     public static void setHighwayCoords(BlockPos value) {
         highwayCoords = value;
-    }
-
-    public Setting<List<Item>> getBlacklist() {
-        return blacklist;
     }
 
     private void initializeRequiredVariables() {
@@ -367,7 +363,7 @@ public class IceHighwayBuilder extends Module {
     }
 
     private @NotNull BlockPos getBlockPos() {
-        int offset = 1;
+        int offset = 2;
         return switch (getPlayerDirection()) {
             case NORTH -> new BlockPos(playerX, playerY, mc.player.getBlockZ() + offset);
             case SOUTH -> new BlockPos(playerX, playerY, mc.player.getBlockZ() - offset);
@@ -385,20 +381,10 @@ public class IceHighwayBuilder extends Module {
             if (!mc.world.getBlockState(getBlockPos()).isAir() 
             && !(mc.world.getBlockState(getBlockPos()).getBlock() instanceof ShulkerBoxBlock)
             && !hasOpenedShulker) {
-                InvUtils.swap(0, true);
                 BlockUtils.breakBlock(getBlockPos(), true);
             }
         }
-        if (stealingDelay == 2) {
-            BlockPos temp = new BlockPos(getBlockPos().getX(),getBlockPos().getY()+1,getBlockPos().getZ());
-            if (!mc.world.getBlockState(temp).isAir()
-                    && !(mc.world.getBlockState(temp).getBlock() instanceof ShulkerBoxBlock)
-                    && !hasOpenedShulker) {
-                InvUtils.swap(0, true);
-                BlockUtils.breakBlock(temp, true);
-            }
-        }
-        if (stealingDelay < 4) {
+        if (stealingDelay < 3) {
             stealingDelay ++;
             return;
         }
@@ -417,7 +403,7 @@ public class IceHighwayBuilder extends Module {
                 ItemStack itemStack = mc.player.getInventory().getStack(i);
                 if (!itemStack.isEmpty() && !blacklist.get().contains(itemStack.getItem()) && (trashCount > 1)) {
                     if (mc.player.getInventory().getStack(6).isEmpty()) {
-                        InvUtils.quickSwap().fromId(6).toId(i);
+                        InvUtils.move().from(6).to(i);
                         if (i < 9) {
                             InvUtils.swap(i, false);
                         } else {
@@ -444,7 +430,11 @@ public class IceHighwayBuilder extends Module {
                 swapSlot = findPickToSwap(mc.player.getInventory().getStack(7));
                 numberOfSlotsToSteal = 1;
             }
-            isRestocking = true;
+            if (restockingType < 2) {
+                isRestocking = true;
+            } else {
+                state = "retrievingFromShulker";
+            }
             isClearingInventory = false;
         }
     }
@@ -476,6 +466,9 @@ public class IceHighwayBuilder extends Module {
             if (areShulkerBoxesNearby()) {
                 for (Item item : items) {
                     if (!isGatheringItems()) {
+                        if (state == "waitingForPostRestock") {
+                            state == "waitingForGather"
+                        }
                         IceRailGatherItem(item);
                         return;
                     }
@@ -494,6 +487,9 @@ public class IceHighwayBuilder extends Module {
                 isPostRestocking = false;
                 isProcessingTasks = false;
                 hasQueued = false;
+                if (state == "waitingForPostRestock") {
+                    state = "idle";
+                }
             }
         }
     }
@@ -551,8 +547,7 @@ public class IceHighwayBuilder extends Module {
             ItemStack BlueIceShulker = findBestBlueIceShulker();
 
             if (BlueIceShulker == null && !isPlacingShulker) {
-                error(String.format("Player low on materials. %d Blue Ice.", countItems(Items.BLUE_ICE)));
-                toggle();
+                state = "prepToRetrieve";
                 return;
             }
 
@@ -729,13 +724,11 @@ public class IceHighwayBuilder extends Module {
         switch (getPlayerDirection()) {
             case NORTH, SOUTH -> {
                 return mc.player.getBlockY() == playerY &&
-                        mc.player.getBlockX() == playerX &&
-                        mc.player.getX() <= playerX+0.3;
+                        mc.player.getBlockX() == playerX;
             }
             case EAST, WEST -> {
                 return mc.player.getBlockY() == playerY &&
-                        mc.player.getBlockZ() == playerZ &&
-                        mc.player.getZ() >= playerZ+0.3;
+                        mc.player.getBlockZ() == playerZ;
             }
         }
 
@@ -744,65 +737,63 @@ public class IceHighwayBuilder extends Module {
 
     private boolean isHolesInIce() {
         Direction direction = getPlayerDirection();
-        assert mc.player != null;
         if (direction == null) {
             return false;
         }
-        int airBlocks = 0;
-        BlockPos block1 = null;
-        int startBlock = 0;
+        BlockPos[] airBlocks;
+        BlockPos block1;
+        int startBlock;
         switch (direction) {
             case NORTH -> {
-                if (Math.abs(mc.player.getBlockZ()) % 2 == 0) {
+                if (Math.abs(mc.player.getBlockZ()) % 2 == 1) {
                     startBlock = mc.player.getBlockZ();
                 } else {
                     startBlock = mc.player.getBlockZ() + 1;
                 }
             }
             case SOUTH -> {
-                if (Math.abs(mc.player.getBlockZ()) % 2 == 0) {
+                if (Math.abs(mc.player.getBlockZ()) % 2 == 1) {
                     startBlock = mc.player.getBlockZ();
                 } else {
                     startBlock = mc.player.getBlockZ() - 1;
                 }
             }
             case WEST -> {
-                if (Math.abs(mc.player.getBlockX()) % 2 == 0) {
+                if (Math.abs(mc.player.getBlockX()) % 2 == 1) {
                     startBlock = mc.player.getBlockX();
                 } else {
                     startBlock = mc.player.getBlockX() + 1;
                 }
             }
             case EAST -> {
-                if (Math.abs(mc.player.getBlockX()) % 2 == 0) {
+                if (Math.abs(mc.player.getBlockX()) % 2 == 1) {
                     startBlock = mc.player.getBlockX();
                 } else {
                     startBlock = mc.player.getBlockX() - 1;
                 }
             }
-        }
-            for (int i = 1; i < 3; i++) {
+            for (int i = 0; i < 3; i++) {
                 switch (direction) {
                     case WEST -> {
-                        block1 = new BlockPos(startBlock + i * 2, playerY+1, playerZ - 1);
+                        block1 = new BlockPos(startBlock + i * 2, playerY, playerZ - 1);
                     }
                     case EAST -> {
-                        block1 = new BlockPos(startBlock - i * 2, playerY+1, playerZ - 1);
+                        block1 = new BlockPos(startBlock - i * 2, playerY, playerZ - 1);
                     }
                     case NORTH -> {
-                        block1 = new BlockPos(playerX + 1, playerY+1, startBlock + i * 2);
+                        block1 = new BlockPos(playerX + 1, playerY, startBlock + i * 2);
                     }
                     case SOUTH -> {
-                        block1 = new BlockPos(playerX + 1, playerY+1, startBlock - i * 2);
+                        block1 = new BlockPos(playerX + 1, playerY, startBlock - i * 2);
+                    }
+                    if (Items.BLUE_ICE != mc.world.getBlockState().getBlock()) {
+                        airBlocks.add();
                     }
                 }
-                if (Blocks.BLUE_ICE != mc.world.getBlockState(block1).getBlock()) {
-                    airBlocks++;
-                }
             }
-            return airBlocks > 0 && airBlocks < 3;
+            return airBlocks.length > 0 && airBlocks.length < 4;
         }
-
+    }
     private void handleInvalidPosition(int Type) {
         assert mc.player != null;
         BlockPos target;

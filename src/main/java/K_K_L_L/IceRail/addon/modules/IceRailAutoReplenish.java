@@ -330,7 +330,7 @@
      private void fillItems() {
          for (int i = 0; i < 9; i++) {
              assert mc.player != null;
-             setItem(i, mc.player.getInventory().getStack(i));
+             InvUtils.shiftClick().slotId(i);
          }
  
          setItem(SlotUtils.OFFHAND, mc.player.getOffHandStack());
