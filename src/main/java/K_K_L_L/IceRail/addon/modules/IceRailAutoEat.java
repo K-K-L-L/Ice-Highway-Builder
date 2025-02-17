@@ -94,7 +94,7 @@ public class IceRailAutoEat extends Module {
     private final Setting<Double> healthThreshold = sgThreshold.add(new DoubleSetting.Builder()
         .name("health-threshold")
         .description("The level of health you eat at.")
-        .defaultValue(19)
+        .defaultValue(12)
         .range(1, 19)
         .sliderRange(1, 19)
         .visible(() -> thresholdMode.get() != ThresholdMode.Hunger)
@@ -104,7 +104,7 @@ public class IceRailAutoEat extends Module {
     private final Setting<Integer> hungerThreshold = sgThreshold.add(new IntSetting.Builder()
         .name("hunger-threshold")
         .description("The level of hunger you eat at.")
-        .defaultValue(19)
+        .defaultValue(12)
         .range(1, 19)
         .sliderRange(1, 19)
         .visible(() -> thresholdMode.get() != ThresholdMode.Health)
@@ -134,7 +134,7 @@ public class IceRailAutoEat extends Module {
     @EventHandler(priority = EventPriority.LOW)
     private void onTick(TickEvent.Pre event) {
         if (needsToScaffold()) return;
-
+        if (!isActive()) return;
         Module iceHighwayBuilder = Modules.get().get("ice-highway-builder");
         if (iceHighwayBuilder != null) {
             BoolSetting amountSetting = (BoolSetting) iceHighwayBuilder.settings.get("eat-egap-when-burning");

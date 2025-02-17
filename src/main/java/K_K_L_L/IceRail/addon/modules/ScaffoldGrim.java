@@ -7,9 +7,13 @@ import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
+import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import K_K_L_L.IceRail.addon.IceRail;
 import meteordevelopment.orbit.EventHandler;
@@ -49,6 +53,7 @@ public class ScaffoldGrim extends Module {
 
         // Only place a block every 3 ticks to avoid rubberband
         if (tickCounter % 3 != 0) return;
+        if (!isActive()) return;
         if (getPlayerDirection() == null) {
             playerDirection = mc.player.getHorizontalFacing();
         } else
@@ -84,7 +89,13 @@ public class ScaffoldGrim extends Module {
             };
 
             if (targetPos == null) return;
-
+            if (mc.getNetworkHandler() == null) return;
+            assert mc.world != null;
+            if (mc.world.getBlockState(targetPos).getBlock() == Blocks.SOUL_SAND) {
+                mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, targetPos, BlockUtils.getDirection(targetPos)));
+                mc.player.swingHand(Hand.MAIN_HAND);
+                mc.getNetworkHandler().sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, targetPos, BlockUtils.getDirection(targetPos)));
+            }
             if (mc.world.getBlockState(targetPos).isAir()) {
 
                 if (placeBlock(item, targetPos, playerDirection)) {

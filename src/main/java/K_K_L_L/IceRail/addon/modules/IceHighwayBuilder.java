@@ -133,7 +133,61 @@ public class IceHighwayBuilder extends Module {
 
     private final Setting<List<Item>> blacklist = sgBlacklist.add(new ItemListSetting.Builder()
          .name("blacklist")
-         .description("Items you don't want to throw (Example: Shulkers).")
+         .description("Items you don't want to throw.")
+         .defaultValue(
+                 Items.SHULKER_BOX,
+                 Items.WHITE_SHULKER_BOX,
+                 Items.ORANGE_SHULKER_BOX,
+                 Items.MAGENTA_SHULKER_BOX,
+                 Items.LIGHT_BLUE_SHULKER_BOX,
+                 Items.YELLOW_SHULKER_BOX,
+                 Items.LIME_SHULKER_BOX,
+                 Items.PINK_SHULKER_BOX,
+                 Items.GRAY_SHULKER_BOX,
+                 Items.LIGHT_GRAY_SHULKER_BOX,
+                 Items.CYAN_SHULKER_BOX,
+                 Items.PURPLE_SHULKER_BOX,
+                 Items.BLUE_SHULKER_BOX,
+                 Items.BROWN_SHULKER_BOX,
+                 Items.GREEN_SHULKER_BOX,
+                 Items.RED_SHULKER_BOX,
+                 Items.BLACK_SHULKER_BOX,
+                 Items.ENCHANTED_GOLDEN_APPLE,
+                 Items.COOKED_BEEF,
+                 Items.COOKED_CHICKEN,
+                 Items.COOKED_MUTTON,
+                 Items.COOKED_COD,
+                 Items.COOKED_PORKCHOP,
+                 Items.ENDER_CHEST,
+                 Items.GOLDEN_CARROT,
+                 Items.GOLDEN_BOOTS,
+                 Items.GOLDEN_HELMET,
+                 Items.OBSIDIAN,
+                 Items.BLUE_ICE,
+                 Items.FLINT_AND_STEEL,
+                 Items.DIAMOND_PICKAXE,
+                 Items.NETHERITE_PICKAXE,
+                 Items.DIAMOND_AXE,
+                 Items.NETHERITE_AXE,
+                 Items.DIAMOND_SHOVEL,
+                 Items.NETHERITE_SHOVEL,
+                 Items.DIAMOND_SWORD,
+                 Items.NETHERITE_SWORD,
+                 Items.DIAMOND_HELMET,
+                 Items.DIAMOND_CHESTPLATE,
+                 Items.DIAMOND_LEGGINGS,
+                 Items.DIAMOND_BOOTS,
+                 Items.NETHERITE_HELMET,
+                 Items.NETHERITE_CHESTPLATE,
+                 Items.NETHERITE_LEGGINGS,
+                 Items.NETHERITE_BOOTS,
+                 Items.END_CRYSTAL,
+                 Items.TOTEM_OF_UNDYING,
+                 Items.EXPERIENCE_BOTTLE,
+                 Items.CRAFTING_TABLE,
+                 Items.FIREWORK_ROCKET,
+                 Items.ELYTRA
+         )
          .build()
      );
 
@@ -412,9 +466,9 @@ public class IceHighwayBuilder extends Module {
                     }
                     if (stealingDelay == 5) {
                         if (i < 9) {
-                            InvUtils.drop().slot(i);
+                            if (!blacklist.get().contains(mc.player.getInventory().getStack(i).getItem())) {InvUtils.drop().slot(i);}
                         } else {
-                            InvUtils.drop().slot(6);
+                            if (!blacklist.get().contains(mc.player.getInventory().getStack(6).getItem())) {InvUtils.drop().slot(6);}
                         }
                     }
                     return;
@@ -422,7 +476,6 @@ public class IceHighwayBuilder extends Module {
             }
         } else {
             mc.player.setYaw(oldYaw);
-            isPlacingShulker = true;
             if (restockingType == 0) {
                 swapSlot = -1;
                 numberOfSlotsToSteal = countEmptySlots();
@@ -432,8 +485,12 @@ public class IceHighwayBuilder extends Module {
             }
             if (restockingType < 2) {
                 isRestocking = true;
+                isPlacingShulker = true;
             } else {
-                state = "retrievingFromShulker";
+                BlueIceMiner.state = BlueIceMiner.NewState;
+                if (BlueIceMiner.state.equals("waitingForGather")) {
+                    IceRailGatherItem(Items.OBSIDIAN);
+                }
             }
             isClearingInventory = false;
         }
@@ -466,8 +523,9 @@ public class IceHighwayBuilder extends Module {
             if (areShulkerBoxesNearby()) {
                 for (Item item : items) {
                     if (!isGatheringItems()) {
-                        if (state == "waitingForPostRestock") {
-                            state == "waitingForGather"
+                        if (BlueIceMiner.state == "waitingForPostRestock") {
+                            BlueIceMiner.state = "waitingForGather";
+                            BlueIceMiner.scanningWorld = true;
                         }
                         IceRailGatherItem(item);
                         return;
@@ -487,8 +545,9 @@ public class IceHighwayBuilder extends Module {
                 isPostRestocking = false;
                 isProcessingTasks = false;
                 hasQueued = false;
-                if (state == "waitingForPostRestock") {
-                    state = "idle";
+                if (BlueIceMiner.state == "waitingForPostRestock") {
+                    BlueIceMiner.state = "idle";
+                    BlueIceMiner.scanningWorld = true;
                 }
             }
         }
@@ -502,7 +561,10 @@ public class IceHighwayBuilder extends Module {
         Module iceRailAutoEat = Modules.get().get("ice-rail-auto-eat");
         Module iceRailNuker = Modules.get().get("ice-rail-nuker");
         Module icePlacer = Modules.get().get("ice-placer");
-
+        BlueIceMiner object = new BlueIceMiner();
+        if (object.getIsPathing()) {
+            return;
+        }
         if (iceRailAutoEat != null) {
             BoolSetting amountSetting = (BoolSetting) iceRailAutoEat.settings.get("eat-egap-when-burning");
             if (amountSetting != null) amountSetting.set(eatEGaps.get());
@@ -534,7 +596,8 @@ public class IceHighwayBuilder extends Module {
         }
 
         if (isClearingInventory) {
-            handleClearInventory();
+            if (true) {handleClearInventory();} else {BlueIceMiner.state = BlueIceMiner.NewState;}
+
             return;
         }
 
@@ -547,7 +610,10 @@ public class IceHighwayBuilder extends Module {
             ItemStack BlueIceShulker = findBestBlueIceShulker();
 
             if (BlueIceShulker == null && !isPlacingShulker) {
-                state = "prepToRetrieve";
+                if (BlueIceMiner.state == "idle") {
+                    BlueIceMiner.state = "goToPortal";
+                    BlueIceMiner.scanningWorld = true;
+                }
                 return;
             }
 
@@ -737,63 +803,66 @@ public class IceHighwayBuilder extends Module {
 
     private boolean isHolesInIce() {
         Direction direction = getPlayerDirection();
+        assert mc.player != null;
         if (direction == null) {
             return false;
         }
-        BlockPos[] airBlocks;
-        BlockPos block1;
-        int startBlock;
+        int airBlocks = 0;
+        BlockPos block1 = null;
+        int startBlock = 0;
         switch (direction) {
             case NORTH -> {
-                if (Math.abs(mc.player.getBlockZ()) % 2 == 1) {
+                if (Math.abs(mc.player.getBlockZ()) % 2 == 0) {
                     startBlock = mc.player.getBlockZ();
                 } else {
                     startBlock = mc.player.getBlockZ() + 1;
                 }
             }
             case SOUTH -> {
-                if (Math.abs(mc.player.getBlockZ()) % 2 == 1) {
+                if (Math.abs(mc.player.getBlockZ()) % 2 == 0) {
                     startBlock = mc.player.getBlockZ();
                 } else {
                     startBlock = mc.player.getBlockZ() - 1;
                 }
             }
             case WEST -> {
-                if (Math.abs(mc.player.getBlockX()) % 2 == 1) {
+                if (Math.abs(mc.player.getBlockX()) % 2 == 0) {
                     startBlock = mc.player.getBlockX();
                 } else {
                     startBlock = mc.player.getBlockX() + 1;
                 }
             }
             case EAST -> {
-                if (Math.abs(mc.player.getBlockX()) % 2 == 1) {
+                if (Math.abs(mc.player.getBlockX()) % 2 == 0) {
                     startBlock = mc.player.getBlockX();
                 } else {
                     startBlock = mc.player.getBlockX() - 1;
                 }
             }
-            for (int i = 0; i < 3; i++) {
-                switch (direction) {
-                    case WEST -> {
-                        block1 = new BlockPos(startBlock + i * 2, playerY, playerZ - 1);
-                    }
-                    case EAST -> {
-                        block1 = new BlockPos(startBlock - i * 2, playerY, playerZ - 1);
-                    }
-                    case NORTH -> {
-                        block1 = new BlockPos(playerX + 1, playerY, startBlock + i * 2);
-                    }
-                    case SOUTH -> {
-                        block1 = new BlockPos(playerX + 1, playerY, startBlock - i * 2);
-                    }
-                    if (Items.BLUE_ICE != mc.world.getBlockState().getBlock()) {
-                        airBlocks.add();
-                    }
+        }
+        for (int i = 1; i <= 3; i++) {
+            switch (direction) {
+                case WEST -> {
+                    block1 = new BlockPos(startBlock + i * 2, playerY+1, playerZ - 1);
+                }
+                case EAST -> {
+                    block1 = new BlockPos(startBlock - i * 2, playerY+1, playerZ - 1);
+                }
+                case NORTH -> {
+                    block1 = new BlockPos(playerX + 1, playerY+1, startBlock + i * 2);
+                }
+                case SOUTH -> {
+                    block1 = new BlockPos(playerX + 1, playerY+1, startBlock - i * 2);
                 }
             }
-            return airBlocks.length > 0 && airBlocks.length < 4;
+            assert mc.world != null;
+            if (Blocks.BLUE_ICE != mc.world.getBlockState(block1).getBlock()) {
+                airBlocks++;
+            }
         }
+        return airBlocks > 0 && airBlocks < 3;
     }
+
     private void handleInvalidPosition(int Type) {
         assert mc.player != null;
         BlockPos target;
@@ -836,6 +905,7 @@ public class IceHighwayBuilder extends Module {
         Module iceRailAutoEat = Modules.get().get("ice-rail-auto-eat");
         Module iceRailAutoReplenish = Modules.get().get("ice-rail-auto-replenish");
         Module scaffoldGrim = Modules.get().get("scaffold-grim");
+        Module blueIceMiner = Modules.get().get("blue-ice-miner");
 
         if (enableAutoEat.get() && !iceRailAutoEat.isActive()) iceRailAutoEat.toggle();
 
@@ -844,6 +914,7 @@ public class IceHighwayBuilder extends Module {
                 iceRailAutoReplenish.toggle();
 
         if (!scaffoldGrim.isActive()) scaffoldGrim.toggle();
+        if (!blueIceMiner.isActive()) blueIceMiner.toggle();
     }
 
     private void disableAllModules() {
@@ -852,7 +923,8 @@ public class IceHighwayBuilder extends Module {
                 "ice-placer",
                 "ice-rail-auto-replenish",
                 "ice-rail-nuker",
-                "scaffold-grim"
+                "scaffold-grim",
+                "blue-ice-miner"
         };
 
         for (String moduleName : modulesToDisable) {
@@ -865,5 +937,8 @@ public class IceHighwayBuilder extends Module {
         Module iceRailAutoEat = Modules.get().get("ice-rail-auto-eat");
         if (disableAutoEatAfterDigging.get() && iceRailAutoEat != null && iceRailAutoEat.isActive())
             iceRailAutoEat.toggle();
+    }
+    public Setting<List<Item>> getBlacklist(){
+        return blacklist;
     }
 }

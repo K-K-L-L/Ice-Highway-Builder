@@ -48,7 +48,7 @@
      private final Setting<Item> slot3Item = sgGeneral.add(new ItemSetting.Builder()
              .name("slot-3-item")
              .description("Item to maintain in the third hotbar slot.")
-             .defaultValue(Items.AIR)
+             .defaultValue(Items.BLUE_ICE)
              .build()
      );
  
@@ -85,23 +85,20 @@
  
      @Override
      public void onActivate() {
-         fillItems();
          tickDelayLeft = tickDelay.get();
      }
  
      @EventHandler
      private void onTick(TickEvent.Pre event) {
-         fillItems();
- 
+         if (!isActive()) return;
          boolean flag = false;
- 
          if (tickDelayLeft <= 0) {
              tickDelayLeft = tickDelay.get();
  
              findAndMoveBestToolToFirstHotbarSlot();
              checkBlueIceShulkerSlot();
              checkPicksShulkerSlot();
- 
+
              Item[] itemsToCheck = new Item[]{
                      slot3Item.get(),
                      slot4Item.get(), slot5Item.get(),
@@ -307,7 +304,7 @@
          int count = 0;
  
          assert mc.player != null;
-         for (int i = mc.player.getInventory().size() - 2; i >= 0; i--) {
+         for (int i = 35; i >= 0; i--) {
              ItemStack stack = mc.player.getInventory().getStack(i);
  
              if (i != excludedSlot && stack.getItem() == item) {
@@ -325,15 +322,6 @@
  
      private void addSlots(int to, int from) {
          InvUtils.move().from(from).to(to);
-     }
- 
-     private void fillItems() {
-         for (int i = 0; i < 9; i++) {
-             assert mc.player != null;
-             InvUtils.shiftClick().slotId(i);
-         }
- 
-         setItem(SlotUtils.OFFHAND, mc.player.getOffHandStack());
      }
  
      private void setItem(int slot, ItemStack stack) {

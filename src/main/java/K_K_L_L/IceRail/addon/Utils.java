@@ -16,6 +16,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.*;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -52,10 +53,14 @@ public class Utils {
 
                 if (speed > bestSpeed) {
                     bestSpeed = speed;
-                    bestSlot = i;
+                    if (meteordevelopment.meteorclient.utils.Utils.hasEnchantments(itemStack, Enchantments.SILK_TOUCH) ||
+                            blockState.getBlock() != Blocks.BLUE_ICE) {
+                        bestSlot = i;
+                    }
                 }
             }
         }
+
 
         if (bestSlot != -1) {
             mc.player.getInventory().selectedSlot = bestSlot;
@@ -246,12 +251,16 @@ public class Utils {
     public static void togglePaver(boolean activate) {
         meteordevelopment.meteorclient.systems.modules.Module icePlacer = Modules.get().get("ice-placer");
         meteordevelopment.meteorclient.systems.modules.Module iceRailNuker = Modules.get().get("ice-rail-nuker");
+        meteordevelopment.meteorclient.systems.modules.Module BlueIceMiner = Modules.get().get("blue-ice-miner");
 
         if (icePlacer != null && activate != icePlacer.isActive())
             icePlacer.toggle();
 
         if (iceRailNuker != null && activate != iceRailNuker.isActive())
             iceRailNuker.toggle();
+
+        if (BlueIceMiner != null && activate != BlueIceMiner.isActive())
+            BlueIceMiner.toggle();
     }
     public static void goToHighwayCoords(boolean paveAfterwards) {
         assert mc.player != null;

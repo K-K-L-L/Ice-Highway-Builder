@@ -75,8 +75,9 @@ public class IceRailGatherItem extends Module {
             scheduler1.shutdownNow();
         }
         cancelCurrentProcessBaritone();
-        if (state == "waitingForGather") {
-            state = returnToState;
+        if (BlueIceMiner.state.equals("waitingForGather")) {
+            BlueIceMiner.state = BlueIceMiner.returnToState;
+            BlueIceMiner.scanningWorld = true;
         }
     }
 

@@ -22,6 +22,7 @@
  import net.minecraft.block.Block;
  import net.minecraft.block.Blocks;
  import net.minecraft.client.MinecraftClient;
+ import net.minecraft.item.Items;
  import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
  import net.minecraft.util.Hand;
  import net.minecraft.util.math.BlockPos;
@@ -69,7 +70,7 @@
      private final Setting<Boolean> packetMine = sgGeneral.add(new BoolSetting.Builder()
          .name("packet-mine")
          .description("Attempt to instamine everything at once.")
-         .defaultValue(false)
+         .defaultValue(true)
          .build()
      );
  
@@ -90,6 +91,7 @@
      private final Setting<List<Block>> blacklist = sgWhitelist.add(new BlockListSetting.Builder()
          .name("blacklist")
          .description("The blocks you don't want to mine.")
+         .defaultValue(Blocks.BLUE_ICE)
          .visible(() -> listMode.get() == ListMode.Blacklist)
          .build()
      );
