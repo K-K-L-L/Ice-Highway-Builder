@@ -263,6 +263,8 @@ public class IceHighwayBuilder extends Module {
         releaseForward();
         resetState();
         shutdownScheduler1();
+        setKeyPressed(mc.options.rightKey, false);
+        setKeyPressed(mc.options.leftKey, false);
 
     }
 
