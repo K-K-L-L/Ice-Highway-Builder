@@ -226,10 +226,10 @@
          BlockIterator.register(maxWidth, maxHeight, (blockPos, blockState) -> {
              if (!isInAnyRegion(blockPos)) return;
              if (!BlockUtils.canBreak(blockPos, blockState)) return;
- 
-             if (listMode.get() == ListMode.Whitelist && !whitelist.get().contains(blockState.getBlock())) return;
-             if (listMode.get() == ListMode.Blacklist && blacklist.get().contains(blockState.getBlock())) return;
- 
+            if (!(blockState.getBlock() == Blocks.BLUE_ICE && blockPos.getY() != 115)) {
+                if (listMode.get() == ListMode.Whitelist && !whitelist.get().contains(blockState.getBlock())) return;
+                if (listMode.get() == ListMode.Blacklist && blacklist.get().contains(blockState.getBlock())) return;
+            }
              blocks.add(blockPos.toImmutable());
          });
  
