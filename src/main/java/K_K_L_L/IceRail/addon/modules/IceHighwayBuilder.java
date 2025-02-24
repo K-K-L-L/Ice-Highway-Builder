@@ -263,8 +263,6 @@ public class IceHighwayBuilder extends Module {
         releaseForward();
         resetState();
         shutdownScheduler1();
-        setKeyPressed(mc.options.rightKey, false);
-        setKeyPressed(mc.options.leftKey, false);
 
     }
 
@@ -421,14 +419,29 @@ public class IceHighwayBuilder extends Module {
     private @NotNull BlockPos getBlockPos() {
         int offset = 2;
         return switch (getPlayerDirection()) {
-            case NORTH -> new BlockPos(playerX, playerY, mc.player.getBlockZ() + offset);
-            case SOUTH -> new BlockPos(playerX, playerY, mc.player.getBlockZ() - offset);
+            case NORTH -> new BlockPos(playerX, playerY, mc.player.getBlockZ() - offset);
+            case SOUTH -> new BlockPos(playerX, playerY, mc.player.getBlockZ() + offset);
             case EAST -> new BlockPos(mc.player.getBlockX() + offset, playerY, playerZ);
             case WEST -> new BlockPos(mc.player.getBlockX() - offset, playerY, playerZ);
             default -> new BlockPos(0, 0, 0); // This shouldn't happen.
         };
     }
 
+    private void dropSlot(int slot3) {
+        assert mc.player != null;
+        if (!blacklist.get().contains(mc.player.getInventory().getStack(slot3).getItem())) {
+            InvUtils.drop().slot(slot3);
+        } else {
+            int slot2 = 9;
+            for (int j = 9; j < 36; j++) {
+                if (!blacklist.get().contains(mc.player.getInventory().getStack(slot3).getItem())) {
+                    slot2 = j;
+                    break;
+                }
+            }
+            InvUtils.quickSwap().fromId(slot3).toId(slot2);
+        }
+    }
     private void handleClearInventory() {
         if (isRestocking || isPostRestocking)
             return;
@@ -468,9 +481,9 @@ public class IceHighwayBuilder extends Module {
                     }
                     if (stealingDelay == 5) {
                         if (i < 9) {
-                            if (!blacklist.get().contains(mc.player.getInventory().getStack(i).getItem())) {InvUtils.drop().slot(i);}
+                            dropSlot(i);
                         } else {
-                            if (!blacklist.get().contains(mc.player.getInventory().getStack(6).getItem())) {InvUtils.drop().slot(6);}
+                            dropSlot(6);
                         }
                     }
                     return;
@@ -572,6 +585,11 @@ public class IceHighwayBuilder extends Module {
             if (amountSetting != null) amountSetting.set(eatEGaps.get());
         }
 
+        if (isClearingInventory) {
+            handleClearInventory();
+            releaseForward();
+            return;
+        }
         if (isGoingToHighway) {
             handleInvalidPosition(0);
             return;
@@ -594,17 +612,13 @@ public class IceHighwayBuilder extends Module {
 
         if (isPostRestocking) {
             handlePostRestocking();
-            return;
-        }
-
-        if (isClearingInventory) {
-            if (true) {handleClearInventory();} else {BlueIceMiner.state = BlueIceMiner.NewState;}
-
+            releaseForward();
             return;
         }
 
         if (isRestocking) {
             handleRestocking();
+            releaseForward();
             return;
         }
 
@@ -613,6 +627,7 @@ public class IceHighwayBuilder extends Module {
 
             if (BlueIceShulker == null && !isPlacingShulker) {
                 if (BlueIceMiner.state == "idle") {
+                    releaseForward();
                     BlueIceMiner.state = "goToPortal";
                     BlueIceMiner.scanningWorld = true;
                 }

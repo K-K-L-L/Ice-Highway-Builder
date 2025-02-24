@@ -9,6 +9,8 @@ import K_K_L_L.IceRail.addon.IceRail;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.block.BlockState;
 
 import static K_K_L_L.IceRail.addon.Utils.switchToItem;
 import static K_K_L_L.IceRail.addon.modules.IceHighwayBuilder.*;
@@ -36,15 +38,15 @@ public class IcePlacer extends Module {
             case NORTH -> {
                 targetPos = new BlockPos(playerX + 1, playerY + 1, mc.player.getBlockZ() - 2);
                 targetPos2 = new BlockPos(playerX + 2, playerY + 1, mc.player.getBlockZ() - 2);
-                guardrail1 = new BlockPos(playerX + 2, playerY + 2, mc.player.getBlockZ() - 2);
-                guardrail2 = new BlockPos(playerX - 1, playerY + 2, mc.player.getBlockZ() - 2);
+                guardrail1 = new BlockPos(playerX - 1, playerY + 2, mc.player.getBlockZ() - 2);
+                guardrail2 = new BlockPos(playerX + 2, playerY + 2, mc.player.getBlockZ() - 2);
                 shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 0;
             }
             case SOUTH -> {
                 targetPos = new BlockPos(playerX + 1, playerY + 1, mc.player.getBlockZ() + 2);
                 targetPos2 = new BlockPos(playerX + 2, playerY + 1, mc.player.getBlockZ() + 2);
-                guardrail1 = new BlockPos(playerX + 2, playerY + 2, mc.player.getBlockZ() + 2);
-                guardrail2 = new BlockPos(playerX - 1, playerY + 2, mc.player.getBlockZ() + 2);
+                guardrail1 = new BlockPos(playerX - 1, playerY + 2, mc.player.getBlockZ() + 2);
+                guardrail2 = new BlockPos(playerX + 2, playerY + 2, mc.player.getBlockZ() + 2);
                 shouldPlace = Math.abs(mc.player.getBlockZ()) % 2 == 0;
             }
             case WEST -> {
@@ -74,6 +76,18 @@ public class IcePlacer extends Module {
         if (mc.world.isAir(guardrail2)) {
             switchToItem(Items.NETHERRACK);
             BlockUtils.place(guardrail2, InvUtils.findInHotbar(itemStack ->
+                    itemStack.getItem() == Items.NETHERRACK), false, 0, true, true);
+            return;
+        }
+        if (!mc.world.getBlockState(guardrail1.up(-1)).getFluidState().isEmpty()) {
+            switchToItem(Items.NETHERRACK);
+            BlockUtils.place(guardrail1.up(-1), InvUtils.findInHotbar(itemStack ->
+                    itemStack.getItem() == Items.NETHERRACK), false, 0, true, true);
+            return;
+        }
+        if (!mc.world.getBlockState(guardrail2.up(-1)).getFluidState().isEmpty()) {
+            switchToItem(Items.NETHERRACK);
+            BlockUtils.place(guardrail2.up(-1), InvUtils.findInHotbar(itemStack ->
                     itemStack.getItem() == Items.NETHERRACK), false, 0, true, true);
             return;
         }

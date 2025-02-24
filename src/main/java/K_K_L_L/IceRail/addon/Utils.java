@@ -152,6 +152,8 @@ public class Utils {
 
     public static void releaseForward() {
         setKeyPressed(mc.options.forwardKey, false);
+        setKeyPressed(mc.options.rightKey, false);
+        setKeyPressed(mc.options.leftKey, false);
     }
 
     public static boolean hasReachedLocation(ClientPlayerEntity player, BlockPos location) {
